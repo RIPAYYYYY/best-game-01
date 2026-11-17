@@ -26,7 +26,7 @@ export const KIND_MAW = 'maw';
 
 /** What each gloom is made of. Hit points scale with the night's age when it spawns. */
 const GLOOM_STATS = {
-  [KIND_SHADE]: { radius: 15, hp: 3, speed: 63, touch: 10, xp: 1, score: 10, knockResist: 1 },
+  [KIND_SHADE]: { radius: 15, hp: 3, speed: 63, touch: 9, xp: 1, score: 10, knockResist: 1 },
   [KIND_SKITTER]: { radius: 10, hp: 1, speed: 122, touch: 6, xp: 1, score: 15, knockResist: 1 },
   [KIND_BRUTE]: { radius: 26, hp: 16, speed: 35, touch: 18, xp: 3, score: 30, knockResist: 0.3 },
   [KIND_MAW]: { radius: 46, hp: 250, speed: 27, touch: 24, xp: 20, score: 500, knockResist: 0.06 },
@@ -35,7 +35,7 @@ const GLOOM_STATS = {
 const MAX_ENEMIES = 64;
 const MAX_MOTES = 240;
 const WISP_RADIUS = 7;
-const WISP_HIT_COOLDOWN = 0.16;
+const WISP_HIT_COOLDOWN = 0.12;
 
 export class World {
   constructor() {
@@ -122,7 +122,7 @@ export class World {
   /** Build one gloom of a kind at a place, its strength set by the night's age. */
   makeEnemy(kind, x, y) {
     const stats = GLOOM_STATS[kind];
-    const hpScale = 1 + (this.state.time / 60) * 0.22;
+    const hpScale = 1 + (this.state.time / 60) * 0.18;
     const hp = Math.max(1, Math.round(stats.hp * (kind === KIND_MAW ? 1 : hpScale)));
     return {
       kind,
@@ -243,7 +243,7 @@ export class World {
     const state = this.state;
     enemy.hp -= amount;
     const away = Math.atan2(enemy.y - fromY, enemy.x - fromX);
-    const push = 150 * enemy.knockResist;
+    const push = 95 * enemy.knockResist;
     enemy.vx += Math.cos(away) * push;
     enemy.vy += Math.sin(away) * push;
     this.floater(enemy.x, enemy.y - enemy.radius - 4, String(amount), '#ffd97a');
@@ -258,14 +258,24 @@ export class World {
     return events | EVENT_POP;
   }
 
-  /** Where the next gloom slips in: just past a random edge of the garden. */
+  /**
+   * Where the next gloom slips in: just past a random edge of the garden. One mercy:
+   * nothing arrives close beside the keeper — a near point is mirrored across the
+   * garden, so she is never ambushed by the edge itself.
+   */
   spawnPoint() {
     const rng = this.rng;
     const side = rng.int(0, 3);
-    if (side === 0) return { x: rng.range(0, FIELD.width), y: -34 };
-    if (side === 1) return { x: rng.range(0, FIELD.width), y: FIELD.height + 34 };
-    if (side === 2) return { x: -34, y: rng.range(0, FIELD.height) };
-    return { x: FIELD.width + 34, y: rng.range(0, FIELD.height) };
+    let point;
+    if (side === 0) point = { x: rng.range(0, FIELD.width), y: -34 };
+    else if (side === 1) point = { x: rng.range(0, FIELD.width), y: FIELD.height + 34 };
+    else if (side === 2) point = { x: -34, y: rng.range(0, FIELD.height) };
+    else point = { x: FIELD.width + 34, y: rng.range(0, FIELD.height) };
+    const player = this.state.player;
+    if (Math.hypot(point.x - player.x, point.y - player.y) < 240) {
+      point = { x: FIELD.width - point.x, y: FIELD.height - point.y };
+    }
+    return point;
   }
 
   /** Which glooms the hour calls: skitters after dusk deepens, brutes later still. */
@@ -316,7 +326,7 @@ export class World {
 
     // Spawning: the dark thickens, so the interval between arrivals keeps shrinking.
     state.spawnTimer -= dt;
-    const interval = Math.max(0.42, 1.5 - (state.time / DAWN_TIME) * 1.05);
+    const interval = Math.max(0.45, 2.3 - (state.time / DAWN_TIME) * 1.8);
     if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {
       state.spawnTimer = interval * this.rng.range(0.7, 1.3);
       const point = this.spawnPoint();

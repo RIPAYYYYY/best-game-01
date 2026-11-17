@@ -16,14 +16,14 @@ export const BOSS_TIME = 150;
 /** The lanternkeeper's starting shape; upgrades grow these numbers from here. */
 export const PLAYER = {
   radius: 14,
-  baseSpeed: 220,
+  baseSpeed: 228,
   baseHp: 100,
-  baseWisps: 1,
+  baseWisps: 2,
   baseWispDamage: 1,
   baseOrbitRadius: 48,
-  baseOrbitSpeed: 2.7,
+  baseOrbitSpeed: 3.3,
   baseMagnet: 74,
-  invulnSeconds: 0.7,
+  invulnSeconds: 0.8,
 };
 
 /** Light motes a level costs: the price of the next level grows as the keeper grows. */

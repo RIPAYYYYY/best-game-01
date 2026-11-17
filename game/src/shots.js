@@ -10,7 +10,7 @@ import { SCREEN_LEVELUP, SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render
 
 const CHOOSE_ORDER = ['wisp', 'damage', 'nova', 'orbitRadius', 'orbitSpeed', 'heart', 'magnet', 'boots', 'regen', 'oil'];
 const START_SECONDS = 4;
-const PLAY_SECONDS = 55;
+const PLAY_SECONDS = 78;
 const END_GOOD_SECONDS = 45;
 const LIMIT_SECONDS = 420;
 
@@ -42,7 +42,7 @@ function autopilot(state) {
   let targetX = player.x;
   let targetY = player.y;
   if (nearestEnemy !== null) {
-    const ring = state.wisps.orbitRadius + 30;
+    const ring = state.wisps.orbitRadius + 10;
     const away = Math.atan2(player.y - nearestEnemy.y, player.x - nearestEnemy.x);
     targetX = nearestEnemy.x + Math.cos(away) * ring + Math.cos(away + Math.PI / 2) * 30;
     targetY = nearestEnemy.y + Math.sin(away) * ring + Math.sin(away + Math.PI / 2) * 30;
@@ -51,18 +51,25 @@ function autopilot(state) {
     targetX = nearestMote.x;
     targetY = nearestMote.y;
   }
-  // Shove away from anything that has crept too close, whatever the plan was.
+  // Shove away from anything else that has crept too close — but not from the gloom
+  // being kited: that one is close on purpose, inside the wisps' reach.
   let fleeX = 0;
   let fleeY = 0;
   for (const enemy of state.enemies) {
+    if (enemy === nearestEnemy) continue;
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
     const dist = Math.hypot(dx, dy) || 1;
     if (dist < 120) {
-      const weight = ((120 - dist) / 120) * 160;
+      const weight = ((120 - dist) / 120) * 110;
       fleeX += (dx / dist) * weight;
       fleeY += (dy / dist) * weight;
     }
+  }
+  // Near a wall the garden closes in: lean back toward the middle before it is too late.
+  if (player.x < 90 || player.x > FIELD.width - 90 || player.y < 90 || player.y > FIELD.height - 90) {
+    targetX += (FIELD.width / 2 - player.x) * 0.4;
+    targetY += (FIELD.height / 2 - player.y) * 0.4;
   }
   targetX = clamp(targetX + fleeX, 42, FIELD.width - 42);
   targetY = clamp(targetY + fleeY, 42, FIELD.height - 42);
