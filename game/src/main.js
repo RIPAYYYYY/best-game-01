@@ -299,4 +299,4 @@ if (shot !== null) {
   requestAnimationFrame(frame);
 }
 
-window.__gloam = { world, stageShot };
+window.__gloam = { world, stageShot, getScreen: () => screen };

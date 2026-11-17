@@ -6,6 +6,7 @@
 // into the dark on purpose, so the game-over screen shows a real run's numbers.
 
 import { FIELD, STEP } from './config.js';
+import { EVENT_POP } from './world.js';
 import { SCREEN_LEVELUP, SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 
 const CHOOSE_ORDER = ['wisp', 'damage', 'nova', 'orbitRadius', 'orbitSpeed', 'heart', 'magnet', 'boots', 'regen', 'oil'];
@@ -129,6 +130,24 @@ export function stageShot(name, world, seed) {
       world.reset(attemptSeed);
       playFor(world, PLAY_SECONDS, autopilot);
       if (!world.state.over) break;
+    }
+    // End the scene a breath after a gloom bursts, so the frame holds what a kill
+    // looks like: sparks still flying, fresh motes not yet gathered.
+    if (!world.state.over) {
+      const limit = Math.floor(6 / STEP);
+      for (let index = 0; index < limit; index += 1) {
+        if (world.state.pending.length > 0) chooseForShot(world);
+        const move = autopilot(world.state);
+        const events = world.step(STEP, move.x, move.y);
+        if (events & EVENT_POP) {
+          for (let settle = 0; settle < 7; settle += 1) {
+            const next = autopilot(world.state);
+            world.step(STEP, next.x, next.y);
+          }
+          break;
+        }
+        if (world.state.over) break;
+      }
     }
     return { screen: SCREEN_PLAY, best: 0 };
   }
